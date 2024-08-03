@@ -10,7 +10,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="Trivia Challenge">
     <meta property="og:description" content="Answer every question!">
-    <meta property="og:image" content="/icon.png">
+    <meta property="og:image" content="https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png">
     <script>
       // Inline manifest
       const manifest = {
@@ -22,7 +22,7 @@
         "theme_color": "#000000",
         "icons": [
           {
-            "src": "icon.png",
+            "src": "https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png",
             "sizes": "192x192",
             "type": "image/png"
           }
@@ -36,15 +36,8 @@
       link.href = manifestURL;
       document.head.appendChild(link);
 
-      // Inline service worker
+      // Inline service worker registration
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }).catch(function(error) {
-          console.log('ServiceWorker registration failed: ', error);
-        });
-
-        // Inline service worker code
         const swBlob = new Blob([`
           self.addEventListener('install', function(event) {
             event.waitUntil(
@@ -52,8 +45,7 @@
                 return cache.addAll([
                   '/',
                   '/index.html',
-                  '/icon.png',
-                  'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'
+                  '/https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png'
                 ]);
               })
             );
@@ -69,7 +61,11 @@
         `], { type: 'application/javascript' });
 
         const swURL = URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swURL);
+        navigator.serviceWorker.register(swURL).then(function(registration) {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }).catch(function(error) {
+          console.log('ServiceWorker registration failed: ', error);
+        });
       }
     </script>
   </head>
