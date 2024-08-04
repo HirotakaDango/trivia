@@ -89,6 +89,9 @@
       <div id="question" class="my-3 text-center">Welcome to the trivia game. Select a difficulty to begin.</div>
       <div id="answer" class="list-group"></div>
       <div id="feedback" class="feedback"></div>
+      <div id="next-question-container" class="text-center mt-3 d-none">
+        <button id="next-question" class="btn btn-info">Next Question</button>
+      </div>
     </div>
 
     <script>
@@ -125,6 +128,7 @@
             document.getElementById('question').innerHTML = question;
             document.getElementById('answer').innerHTML = '';
             document.getElementById('feedback').innerHTML = '';
+            document.getElementById('next-question-container').classList.add('d-none'); // Hide the Next Question button
 
             allAnswers.forEach((answer, index) => {
               const answerElement = document.createElement('div');
@@ -145,12 +149,12 @@
 
         const feedbackElement = document.getElementById('feedback');
         if (selectedAnswer === correctAnswer) {
-          feedbackElement.textContent = "You're correct!";
+          feedbackElement.innerHTML = "You're correct! &#128077;"; // Using HTML entity for thumbs up emoji
           feedbackElement.classList.remove('text-danger');
           feedbackElement.classList.add('text-success');
           score++;
         } else {
-          feedbackElement.textContent = `You're incorrect! The correct answer was: ${correctAnswer}`;
+          feedbackElement.innerHTML = `You're incorrect! The correct answer was: <strong>${correctAnswer}</strong> &#128078;`; // Using HTML entity for thumbs down emoji
           feedbackElement.classList.remove('text-success');
           feedbackElement.classList.add('text-danger');
           health -= 5;
@@ -161,9 +165,7 @@
         }
 
         updateScoreAndHealth();
-        setTimeout(() => {
-          fetchTrivia(); // Automatically fetch the next question
-        }, 2000); // 2-second delay before showing the next question
+        document.getElementById('next-question-container').classList.remove('d-none'); // Show the Next Question button
       }
 
       function updateScoreAndHealth() {
@@ -172,7 +174,7 @@
       }
 
       function endGame() {
-        document.getElementById('feedback').textContent = `Game Over! Your final score is ${score}.`;
+        document.getElementById('feedback').innerHTML = `Game Over! Your final score is <strong>${score}</strong>. &#128577;`; // Using HTML entity for frowning face emoji
         document.getElementById('question').innerHTML = '';
         document.getElementById('answer').innerHTML = '';
         document.getElementById('menu').style.display = 'block';
@@ -197,6 +199,10 @@
           alert('Sharing is not supported in your browser.');
         }
       }
+
+      document.getElementById('next-question').onclick = function() {
+        fetchTrivia(); // Fetch the next question when the button is clicked
+      };
 
       // Inline service worker script
       if ('serviceWorker' in navigator) {
