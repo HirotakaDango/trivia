@@ -1,25 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trivia Challenge</title>
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <meta property="og:url" content="">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Trivia Challenge">
-    <meta property="og:description" content="Answer every question!">
-    <meta property="og:image" content="https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png">
+    <title>Trivia Quest: Roguelite RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script>
-      // Inline manifest
       const manifest = {
-        "name": "Trivia Challenge",
-        "short_name": "Trivia",
+        "name": "Trivia Quest RPG",
+        "short_name": "TriviaQuest",
         "start_url": ".",
         "display": "standalone",
-        "background_color": "#ffffff",
-        "theme_color": "#000000",
+        "background_color": "#090d16",
+        "theme_color": "#6366f1",
         "icons": [
           {
             "src": "https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png",
@@ -28,327 +26,1826 @@
           }
         ]
       };
-
       const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
       const manifestURL = URL.createObjectURL(manifestBlob);
       const link = document.createElement('link');
       link.rel = 'manifest';
       link.href = manifestURL;
       document.head.appendChild(link);
-
-      // Inline service worker registration
-      if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`
-          self.addEventListener('install', function(event) {
-            event.waitUntil(
-              caches.open('trivia-challenge-v1').then(function(cache) {
-                return cache.addAll([
-                  '/',
-                  '/index.html',
-                  '/https://raw.githubusercontent.com/HirotakaDango/trivia/main/icon.png'
-                ]);
-              })
-            );
-          });
-
-          self.addEventListener('fetch', function(event) {
-            event.respondWith(
-              caches.match(event.request).then(function(response) {
-                return response || fetch(event.request);
-              })
-            );
-          });
-        `], { type: 'application/javascript' });
-
-        const swURL = URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swURL).then(function(registration) {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }).catch(function(error) {
-          console.log('ServiceWorker registration failed: ', error);
-        });
-      }
     </script>
     <style>
-      .card {
-        max-width: 700px;
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #05070f;
+        background-image: radial-gradient(circle at 50% 10%, #15102a 0%, #05070f 100%);
       }
-
-      .custom-width {
-        max-width: 400px
+      .rpg-font-title {
+        font-family: 'Cinzel', serif;
+      }
+      .retro-font {
+        font-family: 'Press Start 2P', monospace;
+      }
+      .glow-red {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+      }
+      .glow-gold {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+      }
+      @keyframes pulse-slow {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      .animate-pulse-slow {
+        animation: pulse-slow 3s infinite ease-in-out;
+      }
+      @keyframes float-gentle {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-6px) rotate(1deg); }
+      }
+      .animate-float {
+        animation: float-gentle 4s infinite ease-in-out;
+      }
+      .battle-log-item {
+        animation: slideInUp 0.2s ease-out forwards;
+      }
+      @keyframes slideInUp {
+        from { transform: translateY(6px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      @keyframes screen-shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-4px); }
+        40%, 80% { transform: translateX(4px); }
+      }
+      .shake-anim {
+        animation: screen-shake 0.3s ease-in-out;
       }
     </style>
   </head>
-  <body>
-    <div class="container mb-5 mt-3">
-      <div class="card border-0 mx-auto">
-        <div class="d-flex justify-content-between">
-          <div>
-            <div id="health-bar" class="d-none">Health: <span id="health">100</span></div>
-            <div id="score" class="d-none">Score: <span id="score-value">0</span></div>
-          </div>
-          <div>
-            <div id="difficulty" class="d-none">Difficulty: <span id="difficulty-level">easy</span></div>
-            <div id="timer" class="d-none">Time left: <span id="time-left">60</span>s</div>
+  <body class="text-slate-100 min-h-screen pb-4 flex flex-col justify-between">
+
+    <div class="w-full bg-slate-950/80 border-b border-slate-800 py-1.5 px-3 flex justify-between items-center backdrop-blur-md sticky top-0 z-50">
+      <div class="flex items-center gap-1.5">
+        <span class="text-indigo-400 text-base font-bold rpg-font-title">👑 TRIVIA QUEST</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="music-indicator" class="hidden sm:flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest text-slate-500 border border-slate-800 bg-slate-900/60 py-0.5 px-2 rounded">
+          <i class="fa-solid fa-music text-indigo-400 animate-pulse"></i> <span id="bgm-track-name" class="text-slate-300">Exploration</span>
+        </span>
+        <button onclick="toggleSound()" id="sound-toggle-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 w-8 h-8 rounded-lg flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-volume-high text-xs"></i>
+        </button>
+        <button onclick="showRulesModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
+          <i class="fa-solid fa-circle-question text-xs"></i> Guide
+        </button>
+      </div>
+    </div>
+
+    <main id="main-frame" class="container mx-auto px-2 max-w-5xl my-3 flex-grow transition-all duration-300">
+
+      <div id="setup-screen" class="block w-full max-w-3xl mx-auto">
+        <div class="text-center mb-6">
+          <h1 class="rpg-font-title text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-indigo-400 tracking-wider mb-1">TRIVIA QUEST</h1>
+          <p class="text-slate-400 text-xs md:text-sm max-w-md mx-auto">A punishing trivia adventure. Build your stats, hire party members, purchase legendary gear, and slay dangerous bosses!</p>
+          <div class="inline-block mt-3 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+            🚨 This game is made by Gemini, I'm sorry if it's vibe code.
           </div>
         </div>
-        <div id="menu" class="mb-4">
-          <h1 class="fw-bold text-center mt-5">Trivia Challenge</h1>
-          <div id="welcome-message" class="text-center my-4 mx-auto">Welcome to the trivia game. Select a category, type, and difficulty to begin.</div>
-          <div class="text-center">
-            <div id="category-select" class="mb-3 custom-width mx-auto">
-              <select id="category" class="form-select border-0 focus-ring focus-ring-dark">
-                <option value="">Any Category</option>
-                <!-- Categories will be populated dynamically -->
+
+        <h2 class="rpg-font-title text-sm text-amber-400 text-center mb-3 uppercase tracking-wider font-semibold">⚔️ Select Your Class Leader ⚔️</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div id="class-warrior" onclick="selectClass('warrior')" class="relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group">
+            <div class="absolute -top-3 left-4 bg-slate-900 border border-red-500 w-7 h-7 rounded-full flex items-center justify-center text-xs text-red-500 shadow-lg group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="text-left mt-1">
+              <h3 class="rpg-font-title text-base font-bold text-slate-100">WARRIOR</h3>
+              <span class="text-[9px] font-semibold tracking-wider text-red-400 uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 inline-block mt-0.5">High Fortitude</span>
+            </div>
+            <ul class="mt-3 space-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
+              <li class="flex justify-between"><span>Health:</span> <span class="text-slate-200 font-bold">120 HP</span></li>
+              <li class="flex justify-between"><span>Mana:</span> <span class="text-slate-200 font-bold">20 MP</span></li>
+              <li class="flex justify-between"><span>Armor:</span> <span class="text-slate-200 font-bold">5 Blocks</span></li>
+              <li class="flex justify-between"><span class="text-amber-400 font-semibold">Perk:</span> <span class="text-amber-400">-4 DMG sustained</span></li>
+            </ul>
+          </div>
+
+          <div id="class-mage" onclick="selectClass('mage')" class="relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group">
+            <div class="absolute -top-3 left-4 bg-slate-900 border border-cyan-500 w-7 h-7 rounded-full flex items-center justify-center text-xs text-cyan-500 shadow-lg group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="text-left mt-1">
+              <h3 class="rpg-font-title text-base font-bold text-slate-100">MAGE</h3>
+              <span class="text-[9px] font-semibold tracking-wider text-cyan-400 uppercase bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 inline-block mt-0.5">Arcane Scholar</span>
+            </div>
+            <ul class="mt-3 space-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
+              <li class="flex justify-between"><span>Health:</span> <span class="text-slate-200 font-bold">80 HP</span></li>
+              <li class="flex justify-between"><span>Mana:</span> <span class="text-slate-200 font-bold">60 MP</span></li>
+              <li class="flex justify-between"><span>Armor:</span> <span class="text-slate-200 font-bold">1 Block</span></li>
+              <li class="flex justify-between"><span class="text-cyan-400 font-semibold">Perk:</span> <span class="text-cyan-400">+4 MP per turn</span></li>
+            </ul>
+          </div>
+
+          <div id="class-rogue" onclick="selectClass('rogue')" class="relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group">
+            <div class="absolute -top-3 left-4 bg-slate-900 border border-emerald-500 w-7 h-7 rounded-full flex items-center justify-center text-xs text-emerald-500 shadow-lg group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-hand-fist"></i>
+            </div>
+            <div class="text-left mt-1">
+              <h3 class="rpg-font-title text-base font-bold text-slate-100">ROGUE</h3>
+              <span class="text-[9px] font-semibold tracking-wider text-emerald-400 uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 inline-block mt-0.5">Daring Gambler</span>
+            </div>
+            <ul class="mt-3 space-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
+              <li class="flex justify-between"><span>Health:</span> <span class="text-slate-200 font-bold">95 HP</span></li>
+              <li class="flex justify-between"><span>Mana:</span> <span class="text-slate-200 font-bold">35 MP</span></li>
+              <li class="flex justify-between"><span>Armor:</span> <span class="text-slate-200 font-bold">2 Blocks</span></li>
+              <li class="flex justify-between"><span class="text-emerald-400 font-semibold">Perk:</span> <span class="text-emerald-400">25% Dodge, +50% Gold</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <h2 class="rpg-font-title text-sm text-amber-400 text-center mb-3 uppercase tracking-wider font-semibold">👥 Select Starting Party Companion 👥</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div id="comp-clerical" onclick="selectStartingCompanion('clerical')" class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-lg">👼</span>
+                <h4 class="text-xs font-bold text-slate-100">Aria the Cleric</h4>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-tight">Spiritual healer who mends your wounds. Passive: heals +3 HP every turn.</p>
+            </div>
+            <span class="text-[9px] font-bold text-emerald-400 mt-2 block">SELECT TO ENLIST</span>
+          </div>
+
+          <div id="comp-pyro" onclick="selectStartingCompanion('pyro')" class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-lg">🔥</span>
+                <h4 class="text-xs font-bold text-slate-100">Ignis the Pyromancer</h4>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-tight">Channels volatile fire spellcasting. Passive: adds +4 DMG to your strikes.</p>
+            </div>
+            <span class="text-[9px] font-bold text-emerald-400 mt-2 block">SELECT TO ENLIST</span>
+          </div>
+
+          <div id="comp-bard" onclick="selectStartingCompanion('bard')" class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-lg">🎵</span>
+                <h4 class="text-xs font-bold text-slate-100">Lyra the Bard</h4>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-tight">Inspires with beautiful songs. Passive: provides +15% Dungeon XP.</p>
+            </div>
+            <span class="text-[9px] font-bold text-emerald-400 mt-2 block">SELECT TO ENLIST</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 backdrop-blur border border-slate-800 rounded-xl p-4 mb-6 max-w-xl mx-auto">
+          <h3 class="rpg-font-title text-xs text-amber-400 text-center uppercase tracking-wider mb-3"><i class="fa-solid fa-sliders mr-1"></i> Dungeon Configurations</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Sector Category</label>
+              <select id="category" class="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-medium outline-none">
+                <option value="">Any Category (All Monsters)</option>
               </select>
             </div>
-            <div id="type-select" class="mb-3 custom-width mx-auto d-none">
-              <select id="type" class="form-select border-0 focus-ring focus-ring-dark">
-                <option value="">Any Type</option>
+            <div>
+              <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Quest Format</label>
+              <select id="type" class="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-medium outline-none">
+                <option value="">Any Format</option>
                 <option value="multiple">Multiple Choice</option>
                 <option value="boolean">True / False</option>
               </select>
             </div>
-            <div id="difficulty-buttons" class="d-grid gap-2 col-md-6 mx-auto w-50">
-              <button class="btn text-success border-0 link-body-emphasis" onclick="startGame('easy')">Easy</button>
-              <button class="btn text-warning border-0 link-body-emphasis" onclick="startGame('medium')">Medium</button>
-              <button class="btn text-danger border-0 link-body-emphasis" onclick="startGame('hard')">Hard</button>
+          </div>
+          <div>
+            <label class="block text-[10px] text-center font-semibold uppercase tracking-wider text-slate-400 mb-2">Danger Tier</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="setDifficulty('easy')" id="diff-easy" class="difficulty-btn py-1 px-2 rounded border border-emerald-500 text-emerald-400 bg-emerald-500/10 font-bold text-[10px] uppercase tracking-wider transition-all">Easy</button>
+              <button onclick="setDifficulty('medium')" id="diff-medium" class="difficulty-btn py-1 px-2 rounded border border-slate-700 text-slate-400 hover:text-amber-400 hover:border-amber-400 font-bold text-[10px] uppercase tracking-wider transition-all">Medium</button>
+              <button onclick="setDifficulty('hard')" id="diff-hard" class="difficulty-btn py-1 px-2 rounded border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-400 font-bold text-[10px] uppercase tracking-wider transition-all">Hard</button>
             </div>
           </div>
         </div>
-        <div id="question" class="my-3 fw-medium"></div>
-        <div id="answer" class="list-group"></div>
-        <div id="feedback" class="alert mt-2 mb-3 text-center"></div>
-        <div id="next-question-container" class="text-center d-none">
-          <button id="next-question" class="btn btn-primary">Next Question</button>
+
+        <div class="text-center">
+          <button onclick="startGame()" class="rpg-font-title text-base px-8 py-3 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-slate-950 hover:text-white font-extrabold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all w-full max-w-xs uppercase tracking-widest border border-amber-300/20">
+            Enter The Dungeon
+          </button>
         </div>
-        <div id="back-to-menu-container" class="text-center d-none">
-          <button id="back-to-menu" class="btn btn-secondary">Back to Main Menu</button>
+      </div>
+
+      <div id="game-screen" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+        <div class="lg:col-span-2 space-y-3">
+          <div class="bg-slate-900/50 backdrop-blur border border-slate-800/80 rounded-xl p-2.5 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <span class="bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded-lg font-bold text-xs">
+                🏰 ROOM <span id="hud-room">1</span>
+              </span>
+              <span class="text-[10px] text-slate-400">Rank: <span id="hud-difficulty-tag" class="text-amber-400 font-bold uppercase">EASY</span></span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-hourglass-half text-amber-400 text-xs animate-spin-slow"></i>
+              <span class="text-[9px] font-bold text-slate-400">TIME:</span>
+              <div class="w-16 bg-slate-950 rounded-full h-3 relative border border-slate-800 overflow-hidden">
+                <div id="hud-timer-bar" class="bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 h-full w-full transition-all duration-1000"></div>
+                <span id="hud-timer-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white">30s</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="monster-card" class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden transition-all duration-200">
+            <div id="combat-accent-bar" class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-indigo-500"></div>
+            
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <span id="monster-type" class="text-[9px] uppercase tracking-widest text-rose-400 font-bold bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded">General Fiend</span>
+                <h3 id="monster-name" class="rpg-font-title text-base md:text-lg font-bold mt-0.5 text-slate-100">Guardian of Trivia</h3>
+              </div>
+              <div class="text-right">
+                <span id="monster-vitals-label" class="text-[9px] font-semibold text-slate-400 uppercase">Monster HP</span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <div class="w-24 md:w-32 bg-slate-950 rounded-full h-2 border border-slate-800 overflow-hidden">
+                    <div id="monster-hp-bar" class="bg-gradient-to-r from-rose-600 to-red-500 h-full w-full transition-all duration-200"></div>
+                  </div>
+                  <span id="monster-hp" class="text-[10px] font-bold text-rose-400">100/100</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="monster-illustration-box" class="w-full h-32 md:h-40 bg-slate-950 rounded-xl border border-slate-800/60 flex items-center justify-center relative mb-3 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-950/80 pointer-events-none"></div>
+              <div id="monster-art-container" class="transform hover:scale-105 transition-transform duration-300">
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <span class="text-[9px] font-extrabold uppercase tracking-widest text-indigo-400">Riddle Challenge:</span>
+              <p id="trivia-question" class="text-slate-200 font-semibold text-sm md:text-base leading-snug mt-0.5">
+                Loading quest challenge...
+              </p>
+            </div>
+
+            <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            </div>
+
+            <div id="post-question-panel" class="hidden mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div id="combat-feedback" class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+              </div>
+              <button id="btn-next-room" class="px-6 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 font-bold uppercase text-[10px] tracking-wider border border-indigo-400/20 shadow-lg active:scale-95 transition-all w-full sm:w-auto text-center flex justify-center items-center gap-1">
+                Next Room <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800/60 rounded-xl p-3">
+            <h4 class="text-[9px] uppercase tracking-widest font-extrabold text-slate-500 mb-1.5"><i class="fa-solid fa-scroll mr-1"></i> Combat Log</h4>
+            <div id="battle-log" class="max-h-20 overflow-y-auto space-y-1 text-[11px] text-slate-400 no-scrollbar">
+              <p class="text-slate-500 text-center py-1">No encounters logged yet.</p>
+            </div>
+          </div>
         </div>
-        <div id="share-score-container" class="text-center mt-3 d-none">
-          <button id="share-score" class="btn btn-success">Share Score</button>
+
+        <div class="space-y-3">
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative">
+            <div class="absolute -top-2.5 left-4 bg-gradient-to-r from-indigo-500 to-cyan-500 text-slate-950 font-extrabold text-[8px] tracking-widest px-2 py-0.5 rounded-full uppercase shadow">
+              HERO INTEGRITY
+            </div>
+
+            <div class="flex items-center gap-3 mb-3 mt-1">
+              <div class="w-10 h-10 bg-slate-800 border border-indigo-500/30 rounded-xl flex items-center justify-center text-xl text-indigo-400" id="hero-avatar">
+                <i class="fa-solid fa-user-shield"></i>
+              </div>
+              <div class="flex-grow min-w-0">
+                <h4 id="hero-class-name" class="rpg-font-title text-sm font-bold text-slate-100 truncate">HERO LEVEL</h4>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-semibold text-slate-400 flex-shrink-0">LVL <span id="hero-level">1</span></span>
+                  <div class="w-full bg-slate-950 rounded-full h-1 relative border border-slate-800 overflow-hidden">
+                    <div id="hero-exp-bar" class="bg-indigo-400 h-full w-0 transition-all duration-200"></div>
+                  </div>
+                  <span class="text-[9px] text-indigo-400 font-bold flex-shrink-0"><span id="hero-exp">0</span>/100 XP</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-2 border-t border-slate-800 pt-3">
+              <div>
+                <div class="flex justify-between text-[10px] font-semibold mb-0.5">
+                  <span class="text-red-400 flex items-center gap-1"><i class="fa-solid fa-heart text-[8px]"></i> HP Pool</span>
+                  <span id="hero-hp-text" class="text-slate-200 font-bold">100 / 100</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-2 border border-slate-800 overflow-hidden">
+                  <div id="hero-hp-bar" class="bg-gradient-to-r from-red-600 to-emerald-500 h-full w-full transition-all duration-200"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[10px] font-semibold mb-0.5">
+                  <span class="text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-wand-sparkles text-[8px]"></i> Mana Pool</span>
+                  <span id="hero-mp-text" class="text-slate-200 font-bold">40 / 40</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-2 border border-slate-800 overflow-hidden">
+                  <div id="hero-mp-bar" class="bg-gradient-to-r from-cyan-600 to-blue-500 h-full w-full transition-all duration-200"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[10px] font-semibold mb-0.5">
+                  <span class="text-indigo-400 flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[8px]"></i> Shield Wards</span>
+                  <span id="hero-defense-text" class="text-slate-200 font-bold">0 / 5</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-2 border border-slate-800 overflow-hidden">
+                  <div id="hero-defense-bar" class="bg-indigo-500 h-full w-0 transition-all duration-200"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center mt-3 bg-slate-950 border border-slate-800/60 rounded-lg py-1.5 px-3">
+              <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-coins text-amber-500"></i> Dungeon Gold</span>
+              <span id="hero-gold" class="text-sm font-extrabold text-amber-400">0 G</span>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative">
+            <div class="absolute -top-2.5 left-4 bg-gradient-to-r from-emerald-500 to-indigo-500 text-slate-950 font-extrabold text-[8px] tracking-widest px-2 py-0.5 rounded-full uppercase shadow">
+              PARTY COMPANIONS
+            </div>
+            <div id="party-hud-list" class="space-y-2 mt-1">
+              <p class="text-[10px] text-slate-500 italic">No companions recruited yet.</p>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative">
+            <div class="absolute -top-2.5 left-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 font-extrabold text-[8px] tracking-widest px-2 py-0.5 rounded-full uppercase shadow">
+              SPELLBOOK
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-1" id="spells-container">
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative">
+            <div class="absolute -top-2.5 left-4 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-extrabold text-[8px] tracking-widest px-2 py-0.5 rounded-full uppercase shadow">
+              LOADOUT
+            </div>
+
+            <div class="mt-1 mb-3">
+              <h5 class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Equipped Gear</h5>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-lg p-2 flex items-center gap-2 transition-colors cursor-pointer" onclick="showItemDetail('weapon')">
+                  <div class="w-6 h-6 rounded bg-slate-900 flex items-center justify-center text-amber-500 border border-amber-500/20 text-xs" id="slot-weapon-icon">
+                    <i class="fa-solid fa-sword"></i>
+                  </div>
+                  <div class="overflow-hidden">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-wider leading-none">Weapon</p>
+                    <p id="slot-weapon-name" class="text-[10px] text-slate-200 font-bold truncate mt-0.5">None</p>
+                  </div>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 hover:border-cyan-500/50 rounded-lg p-2 flex items-center gap-2 transition-colors cursor-pointer" onclick="showItemDetail('armor')">
+                  <div class="w-6 h-6 rounded bg-slate-900 flex items-center justify-center text-cyan-400 border border-cyan-400/20 text-xs" id="slot-armor-icon">
+                    <i class="fa-solid fa-shirt"></i>
+                  </div>
+                  <div class="overflow-hidden">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-wider leading-none">Armor</p>
+                    <p id="slot-armor-name" class="text-[10px] text-slate-200 font-bold truncate mt-0.5">None</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-3">
+              <h5 class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Quick-Bag</h5>
+              <div class="grid grid-cols-2 gap-2" id="quick-bag">
+                <button onclick="useConsumable('hp_potion')" id="btn-quick-potion-hp" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between transition-all active:scale-95 text-left">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <div class="w-5 h-5 bg-rose-950 border border-rose-500/20 text-rose-400 rounded flex items-center justify-center text-[10px] flex-shrink-0">
+                      <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-slate-200 font-bold leading-none truncate">Healing</p>
+                      <p class="text-[8px] text-slate-400">+40 HP</p>
+                    </div>
+                  </div>
+                  <span id="qty-potion-hp" class="bg-slate-800 text-slate-300 text-[8px] font-extrabold px-1 py-0.5 rounded">x0</span>
+                </button>
+
+                <button onclick="useConsumable('mp_potion')" id="btn-quick-potion-mp" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between transition-all active:scale-95 text-left">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <div class="w-5 h-5 bg-blue-950 border border-blue-500/20 text-blue-400 rounded flex items-center justify-center text-[10px] flex-shrink-0">
+                      <i class="fa-solid fa-prescription-bottle-medical"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-slate-200 font-bold leading-none truncate">Mana</p>
+                      <p class="text-[8px] text-slate-400">+35 MP</p>
+                    </div>
+                  </div>
+                  <span id="qty-potion-mp" class="bg-slate-800 text-slate-300 text-[8px] font-extrabold px-1 py-0.5 rounded">x0</span>
+                </button>
+              </div>
+              
+              <div class="flex justify-between items-center mt-2.5 bg-slate-950/60 p-1.5 rounded text-[8px] text-slate-400">
+                <span class="flex items-center gap-1"><i class="fa-solid fa-feather text-amber-400"></i> Phoenix Feather:</span>
+                <span id="bag-feather-status" class="font-extrabold text-rose-400 uppercase">None</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="upgrade-screen" class="hidden w-full max-w-3xl mx-auto text-center py-4">
+        <div class="mb-6">
+          <span class="text-[10px] font-bold text-amber-400 tracking-widest bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full uppercase">Level Up</span>
+          <h2 class="rpg-font-title text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-indigo-500 mt-2">Select a Destiny Card</h2>
+          <p class="text-slate-400 text-xs mt-1">Acquire unique bonuses, attribute gains, or party upgrades to strengthen your run.</p>
+        </div>
+        <div id="upgrade-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-2xl mx-auto animate-pulse-slow">
+        </div>
+      </div>
+
+      <div id="merchant-screen" class="hidden w-full max-w-3xl mx-auto">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl relative mb-4">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-600"></div>
+          
+          <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl">
+                🧙‍♂️
+              </div>
+              <div class="text-left">
+                <span class="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest">Safe Room Caravan</span>
+                <h2 class="rpg-font-title text-xl font-bold text-amber-400">The Wandering Merchant</h2>
+                <p class="text-[11px] text-slate-400">Acquire fresh gear, potions, or recruit brand-new party companions!</p>
+              </div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800/80 px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
+              <span class="text-[10px] font-semibold text-slate-400">WALLET:</span>
+              <span id="shop-wallet-gold" class="text-base font-black text-amber-400">0 G</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="shop-inventory-container">
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-end">
+            <button onclick="leaveShop()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 hover:text-white font-extrabold text-[10px] uppercase tracking-wider shadow-lg active:scale-95 transition-all w-full md:w-auto text-center">
+              Resume Dungeon Quest <i class="fa-solid fa-arrow-right ml-0.5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameover-screen" class="hidden w-full max-w-sm mx-auto text-center bg-gradient-to-b from-slate-900 to-slate-950 border border-red-500/30 rounded-2xl p-6 shadow-2xl">
+        <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 animate-bounce">
+          💀
+        </div>
+        <h2 class="rpg-font-title text-2xl font-extrabold text-red-500 tracking-wider mb-1">YOU DIED IN QUEST</h2>
+        <p class="text-slate-400 text-[10px] uppercase tracking-widest mb-4" id="gameover-sub-reason">Defeated on floor room 4</p>
+        
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-left mb-4 space-y-2">
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Archetype:</span>
+            <span class="font-bold text-slate-200" id="go-class">Warrior</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Level Attained:</span>
+            <span class="font-bold text-slate-200">LVL <span id="go-level">1</span></span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Completed Rooms:</span>
+            <span class="font-bold text-slate-200" id="go-rooms">0</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-2 mt-2">
+            <span class="text-amber-400 font-semibold">Final Score:</span>
+            <span class="font-extrabold text-amber-400 text-sm" id="go-score">0 pts</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <button onclick="shareScore()" class="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-bold uppercase tracking-wider transition-all flex justify-center items-center gap-1.5">
+            <i class="fa-solid fa-share-nodes"></i> Share Score
+          </button>
+          <button onclick="goBackToMenu()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider transition-all">
+            Back to Menu
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="text-center text-[9px] text-slate-600 uppercase tracking-widest mt-6 w-full flex flex-col items-center gap-1">
+      <span>Trivia Quest RPG</span>
+      <span class="text-indigo-400/80 font-bold">This game is made by Gemini, I'm sorry if it's vibe code.</span>
+    </footer>
+
+    <div id="rules-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 max-w-md w-full rounded-xl p-5 relative">
+        <button onclick="hideRulesModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+        <h3 class="rpg-font-title text-base font-bold text-amber-400 mb-3 flex items-center gap-1.5"><i class="fa-solid fa-circle-info"></i> Guide</h3>
+        <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed max-h-72 overflow-y-auto no-scrollbar">
+          <p><strong class="text-amber-400 uppercase">Answering Trivia:</strong> Correct answers yield XP, Gold, and hit standard enemies or Bosses. Timer timeout or incorrect replies damage your HP.</p>
+          <p><strong class="text-emerald-400 uppercase">Party Companions:</strong> Build a cooperative alliance. You can recruit distinct companions. They provide permanent passive benefits during fights.</p>
+          <p><strong class="text-cyan-400 uppercase">Casting Spells:</strong> Use MP in battle to freeze times, mend health, or use Clairvoyance.</p>
+          <p><strong class="text-indigo-400 uppercase">Boss Fights:</strong> Encounters trigger on every 4th non-safe-caravan floor. Land consecutive strikes to win!</p>
         </div>
       </div>
     </div>
-    <script>
-      let correctAnswer = '';
-      let questionData = null;
-      let score = 0;
-      let health = 100;
-      let difficulty = 'easy';
-      let category = '';
-      let type = '';
-      let answerClicked = false;
-      let timer;
-      let timeLeft;
 
-      // Fetch categories when the page loads
-      window.onload = fetchCategories;
+    <div id="item-detail-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 max-w-xs w-full rounded-xl p-5 relative">
+        <button onclick="hideItemDetailModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+        <div class="text-center mt-1">
+          <div id="item-detail-icon-container" class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-2xl mx-auto mb-3">
+          </div>
+          <span id="item-detail-type" class="text-[8px] text-indigo-400 font-extrabold uppercase tracking-widest bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">Weapon</span>
+          <h3 id="item-detail-name" class="rpg-font-title text-base font-bold text-slate-100 mt-1.5">Item Name</h3>
+          <p id="item-detail-desc" class="text-xs text-slate-400 mt-2 leading-snug whitespace-pre-line"></p>
+        </div>
+        <button onclick="hideItemDetailModal()" class="mt-4 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase rounded-lg transition-all">Close</button>
+      </div>
+    </div>
+
+    <script>
+      let audioEnabled = true;
+
+      const bgmController = {
+        started: false,
+        currentTrack: null,
+        bassSynth: null,
+        chordSynth: null,
+        bassLoop: null,
+        chordLoop: null,
+        
+        init() {
+          if (this.started) return;
+          try {
+            Tone.start();
+            
+            this.bassSynth = new Tone.MonoSynth({
+              oscillator: { type: "triangle" },
+              envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.3 },
+              filter: { Q: 1, type: "lowpass", frequency: 400 }
+            }).toDestination();
+            this.bassSynth.volume.value = -8;
+            
+            this.chordSynth = new Tone.PolySynth(Tone.Synth, {
+              oscillator: { type: "triangle" },
+              envelope: { attack: 0.3, decay: 0.4, sustain: 0.4, release: 0.8 }
+            }).toDestination();
+            this.chordSynth.volume.value = -14;
+            
+            this.started = true;
+          } catch (e) {
+            console.warn(e);
+          }
+        },
+        
+        play(trackName) {
+          this.init();
+          if (!audioEnabled) return;
+          if (this.currentTrack === trackName) return;
+          
+          this.stop();
+          this.currentTrack = trackName;
+          
+          document.getElementById('music-indicator').classList.remove('hidden');
+          document.getElementById('bgm-track-name').textContent = trackName.toUpperCase();
+          
+          try {
+            if (trackName === 'exploration') {
+              Tone.Transport.bpm.value = 105;
+              let step = 0;
+              const bassNotes = ["A2", "E2", "G2", "D2", "F2", "C2", "E2", "B1"];
+              const chords = [
+                ["A3", "C4", "E4"], ["G3", "B3", "D4"],
+                ["F3", "A3", "C4"], ["E3", "G3", "B3"]
+              ];
+              
+              this.bassLoop = new Tone.Loop(time => {
+                const note = bassNotes[step % bassNotes.length];
+                this.bassSynth.triggerAttackRelease(note, "4n", time);
+                
+                if (step % 2 === 0) {
+                  const chord = chords[Math.floor(step / 2) % chords.length];
+                  this.chordSynth.triggerAttackRelease(chord, "2n", time);
+                }
+                step++;
+              }, "2n").start(0);
+              
+              Tone.Transport.start();
+              
+            } else if (trackName === 'boss') {
+              Tone.Transport.bpm.value = 135;
+              let step = 0;
+              const bassNotes = ["D2", "D2", "F2", "D2", "G2", "F2", "G#2", "A2"];
+              const chords = [
+                ["D3", "F3", "A3"], ["F3", "A3", "C4"],
+                ["G3", "B3", "D4"], ["G#3", "B3", "D4"]
+              ];
+              
+              this.bassLoop = new Tone.Loop(time => {
+                const note = bassNotes[step % bassNotes.length];
+                this.bassSynth.triggerAttackRelease(note, "8n", time);
+                
+                if (step % 4 === 0) {
+                  const chord = chords[Math.floor(step / 4) % chords.length];
+                  this.chordSynth.triggerAttackRelease(chord, "2n", time);
+                }
+                step++;
+              }, "4n").start(0);
+              
+              Tone.Transport.start();
+              
+            } else if (trackName === 'shop') {
+              Tone.Transport.bpm.value = 90;
+              let step = 0;
+              const bassNotes = ["C2", "G2", "C2", "F2", "C2", "G2", "F2", "G2"];
+              const chords = [
+                ["C3", "E3", "G3"], ["F3", "A3", "C4"],
+                ["C3", "E3", "G3"], ["G3", "B3", "D4"]
+              ];
+              
+              this.bassLoop = new Tone.Loop(time => {
+                const note = bassNotes[step % bassNotes.length];
+                this.bassSynth.triggerAttackRelease(note, "4n", time);
+                
+                if (step % 2 === 0) {
+                  const chord = chords[Math.floor(step / 2) % chords.length];
+                  this.chordSynth.triggerAttackRelease(chord, "2n", time);
+                }
+                step++;
+              }, "2n").start(0);
+              
+              Tone.Transport.start();
+            }
+          } catch (err) {
+            console.warn(err);
+          }
+        },
+        
+        stop() {
+          try {
+            if (this.bassLoop) { this.bassLoop.stop(); this.bassLoop.dispose(); this.bassLoop = null; }
+            if (this.chordLoop) { this.chordLoop.stop(); this.chordLoop.dispose(); this.chordLoop = null; }
+            Tone.Transport.stop();
+          } catch (e) {}
+          this.currentTrack = null;
+        }
+      };
+
+      const sounds = {
+        correct: () => {
+          if (!audioEnabled) return;
+          try {
+            const synth = new Tone.Synth({oscillator: {type: "triangle"}}).toDestination();
+            synth.triggerAttackRelease("C4", "8n");
+            setTimeout(() => synth.triggerAttackRelease("E4", "8n"), 100);
+            setTimeout(() => synth.triggerAttackRelease("G4", "8n"), 200);
+            setTimeout(() => synth.triggerAttackRelease("C5", "4n"), 300);
+          } catch (e) {}
+        },
+        wrong: () => {
+          if (!audioEnabled) return;
+          try {
+            const synth = new Tone.Synth({oscillator: {type: "sawtooth"}}).toDestination();
+            synth.triggerAttackRelease("F#3", "8n");
+            setTimeout(() => synth.triggerAttackRelease("D3", "4n"), 150);
+          } catch (e) {}
+        },
+        levelUp: () => {
+          if (!audioEnabled) return;
+          try {
+            const poly = new Tone.PolySynth().toDestination();
+            poly.triggerAttackRelease(["C4", "E4", "G4"], "4n");
+            setTimeout(() => poly.triggerAttackRelease(["E4", "G4", "B4"], "4n"), 200);
+            setTimeout(() => poly.triggerAttackRelease(["G4", "B4", "D5"], "2n"), 400);
+          } catch (e) {}
+        },
+        spell: () => {
+          if (!audioEnabled) return;
+          try {
+            const synth = new Tone.MonoSynth({
+              oscillator: {type: "sine"},
+              filter: {Q: 6, type: "lowpass"}
+            }).toDestination();
+            synth.triggerAttackRelease("C5", "8n");
+            synth.frequency.rampTo("C6", 0.3);
+          } catch (e) {}
+        },
+        purchase: () => {
+          if (!audioEnabled) return;
+          try {
+            const synth = new Tone.Synth({oscillator: {type: "triangle"}}).toDestination();
+            synth.triggerAttackRelease("E5", "16n");
+            setTimeout(() => synth.triggerAttackRelease("A5", "16n"), 80);
+          } catch (e) {}
+        },
+        bossEncounter: () => {
+          if (!audioEnabled) return;
+          try {
+            const poly = new Tone.PolySynth().toDestination();
+            poly.triggerAttackRelease(["D2", "D3"], "2n");
+            setTimeout(() => poly.triggerAttackRelease(["G#2", "G#3"], "2n"), 300);
+            setTimeout(() => poly.triggerAttackRelease(["F2", "F3"], "1m"), 600);
+          } catch (e) {}
+        }
+      };
+
+      function toggleSound() {
+        audioEnabled = !audioEnabled;
+        const btn = document.getElementById('sound-toggle-btn');
+        if (audioEnabled) {
+          btn.innerHTML = '<i class="fa-solid fa-volume-high text-xs"></i>';
+          btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 w-8 h-8 rounded-lg flex items-center justify-center transition-colors";
+          if (bgmController.currentTrack) {
+            const resumeTrack = bgmController.currentTrack;
+            bgmController.currentTrack = null;
+            bgmController.play(resumeTrack);
+          } else {
+            bgmController.play('exploration');
+          }
+        } else {
+          btn.innerHTML = '<i class="fa-solid fa-volume-xmark text-xs"></i>';
+          btn.className = "bg-red-950 hover:bg-red-900 text-red-400 w-8 h-8 rounded-lg flex items-center justify-center transition-colors border border-red-500/20";
+          bgmController.stop();
+          document.getElementById('music-indicator').classList.add('hidden');
+        }
+      }
+
+      function decodeHTMLEntities(text) {
+        const textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+      }
+
+      let gameActive = false;
+      let selectedHeroClass = 'warrior';
+      let selectedStartCompanion = 'clerical';
+      let dungeonDifficulty = 'easy';
+      let chosenCategory = '';
+      let chosenType = '';
+      
+      let player = {
+        level: 1,
+        exp: 0,
+        hp: 120,
+        maxHp: 120,
+        mana: 20,
+        maxMana: 20,
+        defense: 5,
+        maxDefense: 5,
+        gold: 15,
+        score: 0,
+        roomCount: 0,
+        weapon: { name: 'Rusty Shortsword', damage: 10, bonusExp: 0, bonusGold: 0 },
+        armor: { name: 'Iron Breastplate', reduceDamage: 4, blockBonus: 1 },
+        items: {
+          hp_potion: 1,
+          mp_potion: 1,
+          phoenix_feather: 0
+        },
+        passiveClassBonus: 'warrior',
+        party: []
+      };
+
+      const SPELLS_DATABASE = {
+        heal: {
+          id: 'heal',
+          name: 'Mend Wounds',
+          desc: 'Restores 35 Health instantly',
+          cost: 10,
+          icon: 'fa-heart-pulse text-emerald-400'
+        },
+        clairvoyance: {
+          id: 'clairvoyance',
+          name: 'Clairvoyance',
+          desc: 'Eliminates 2 wrong options',
+          cost: 15,
+          icon: 'fa-eye text-cyan-400'
+        },
+        freeze: {
+          id: 'freeze',
+          name: 'Freeze Time',
+          desc: 'Pauses timer this round',
+          cost: 10,
+          icon: 'fa-snowflake text-blue-400'
+        },
+        mana_shield: {
+          id: 'mana_shield',
+          name: 'Shield Ward',
+          desc: 'Restores 3 Defense points',
+          cost: 8,
+          icon: 'fa-shield-halved text-indigo-400'
+        }
+      };
+
+      const MERCHANT_STOCK = [
+        { id: 'hp_potion', name: 'Health Flask', desc: 'Restores 40 HP instantly', price: 10, type: 'consumable', icon: 'fa-flask text-rose-400' },
+        { id: 'mp_potion', name: 'Mana Potion', desc: 'Restores 35 Mana instantly', price: 10, type: 'consumable', icon: 'fa-prescription-bottle-medical text-blue-400' },
+        { id: 'phoenix_feather', name: 'Phoenix Feather', desc: 'Revive with 30 HP automatically', price: 35, type: 'consumable', icon: 'fa-feather text-amber-400' },
+        { id: 'broadsword', name: 'Heroic Greatsword', desc: 'Warrior weapon: +15% Dungeon EXP', price: 25, type: 'weapon', class: 'warrior', icon: 'fa-sword text-red-400' },
+        { id: 'staff', name: 'Archmage Scepter', desc: 'Mage weapon: Recharge +3 MP extra per turn', price: 25, type: 'weapon', class: 'mage', icon: 'fa-wand-magic text-cyan-400' },
+        { id: 'dagger', name: 'Shadow Dirk', desc: 'Rogue weapon: +45% gold from battles', price: 25, type: 'weapon', class: 'rogue', icon: 'fa-scissors text-emerald-400' },
+        { id: 'mithril_plate', name: 'Mithril Chestplate', desc: 'Blocks 8 damage from wrong answers', price: 30, type: 'armor', icon: 'fa-shield-halved text-slate-300' }
+      ];
+
+      const COMPANIONS_DATABASE = {
+        clerical: { id: 'clerical', name: 'Aria the Cleric', icon: '👼', desc: 'Mends wounds.', passive: 'Restores +3 HP each turn' },
+        pyro: { id: 'pyro', name: 'Ignis the Pyromancer', icon: '🔥', desc: 'Fire spellcasting.', passive: 'Adds +4 DMG to your strikes' },
+        bard: { id: 'bard', name: 'Lyra the Bard', icon: '🎵', desc: 'Inspires heroes.', passive: 'Provides +15% Dungeon XP' }
+      };
+
+      let currentQuestion = null;
+      let currentCorrectAnswer = '';
+      let currentAllAnswers = [];
+      let isQuestionAnswered = false;
+      let timerInterval = null;
+      let timerSecondsRemaining = 30;
+      let isTimerFrozen = false;
+
+      let activeBossFight = false;
+      let bossMaxHP = 100;
+      let bossCurrentHP = 100;
+
+      const monsterGraphics = {
+        science: `<svg class="w-16 h-16" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#60a5fa" stroke-width="4"/><path d="M30 40 Q50 60 70 40 M40 50 L40 70 M60 50 L60 70" fill="none" stroke="#60a5fa" stroke-width="3"/><circle cx="50" cy="30" r="5" fill="#f43f5e"/><circle cx="35" cy="45" r="3" fill="#38bdf8"/><circle cx="65" cy="45" r="3" fill="#38bdf8"/></svg>`,
+        history: `<svg class="w-16 h-16" viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="60" rx="5" fill="none" stroke="#fbbf24" stroke-width="4"/><line x1="35" y1="35" x2="65" y2="35" stroke="#fbbf24" stroke-width="3"/><line x1="35" y1="50" x2="65" y2="50" stroke="#fbbf24" stroke-width="3"/><line x1="35" y1="65" x2="55" y2="65" stroke="#fbbf24" stroke-width="3"/></svg>`,
+        entertainment: `<svg class="w-16 h-16" viewBox="0 0 100 100"><polygon points="50,15 15,85 85,85" fill="none" stroke="#ec4899" stroke-width="4"/><circle cx="50" cy="50" r="10" fill="#ec4899"/><circle cx="35" cy="65" r="6" fill="#a855f7"/><circle cx="65" cy="65" r="6" fill="#a855f7"/></svg>`,
+        general: `<svg class="w-16 h-16" viewBox="0 0 100 100"><path d="M50 15 L80 40 L65 85 L35 85 L20 40 Z" fill="none" stroke="#a78bfa" stroke-width="4"/><path d="M50 35 L50 55 M50 68 L50 72" fill="none" stroke="#a78bfa" stroke-width="5" stroke-linecap="round"/></svg>`,
+        boss: `<svg class="w-20 h-20 animate-float" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="45" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="8 4" class="animate-spin-slow"/>
+          <path d="M40 25 L48 42 L60 30 L72 42 L80 25 L75 50 L45 50 Z" fill="#6b21a8" stroke="#d8b4fe" stroke-width="2"/>
+          <rect x="42" y="45" width="36" height="36" rx="10" fill="#1e1b4b" stroke="#a855f7" stroke-width="3"/>
+          <circle cx="51" cy="58" r="4" fill="#f43f5e" class="animate-pulse"/>
+          <circle cx="69" cy="58" r="4" fill="#f43f5e" class="animate-pulse"/>
+          <rect x="50" y="81" width="20" height="10" rx="3" fill="#312e81" stroke="#a855f7" stroke-width="2"/>
+          <line x1="55" y1="81" x2="55" y2="91" stroke="#d8b4fe"/>
+          <line x1="60" y1="81" x2="60" y2="91" stroke="#d8b4fe"/>
+          <line x1="65" y1="81" x2="65" y2="91" stroke="#d8b4fe"/>
+        </svg>`
+      };
+
+      window.onload = function() {
+        fetchCategories();
+        selectClass('warrior');
+        selectStartingCompanion('clerical');
+      };
 
       async function fetchCategories() {
         try {
           const response = await fetch('https://opentdb.com/api_category.php');
           const data = await response.json();
           const categorySelect = document.getElementById('category');
-          data.trivia_categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
+          data.trivia_categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            categorySelect.appendChild(opt);
           });
-        } catch (error) {
-          console.error('Error fetching categories:', error);
+        } catch (err) {
+          logToBattleScroll("⚠️ Failed connection to OpenTDB. Using offline safety categories.");
         }
       }
 
-      // Show type select when a category is chosen
-      document.getElementById('category').addEventListener('change', function() {
-        document.getElementById('type-select').classList.remove('d-none');
-      });
-
-      function startGame(selectedDifficulty) {
-        difficulty = selectedDifficulty;
-        category = document.getElementById('category').value;
-        type = document.getElementById('type').value;
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('welcome-message').style.display = 'none';
-        document.getElementById('health-bar').classList.remove('d-none');
-        document.getElementById('difficulty').classList.remove('d-none');
-        document.getElementById('score').classList.remove('d-none');
-        document.getElementById('timer').classList.remove('d-none');
-        document.getElementById('difficulty-level').textContent = difficulty;
-        fetchTrivia();
+      function selectClass(className) {
+        selectedHeroClass = className;
+        document.getElementById('class-warrior').className = "relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group";
+        document.getElementById('class-mage').className = "relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group";
+        document.getElementById('class-rogue').className = "relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 group";
+        
+        document.getElementById(`class-${className}`).className = "relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-4 border-2 border-indigo-500 hover:border-indigo-500 cursor-pointer transition-all duration-200 group ring-2 ring-indigo-500/30";
       }
 
-      async function fetchTrivia() {
-        answerClicked = false;
-        document.getElementById('next-question').disabled = true;
-        try {
-          let url = `https://opentdb.com/api.php?amount=1&difficulty=${difficulty}`;
-          if (category) url += `&category=${category}`;
-          if (type) url += `&type=${type}`;
+      function selectStartingCompanion(id) {
+        selectedStartCompanion = id;
+        document.getElementById('comp-clerical').className = "bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between";
+        document.getElementById('comp-pyro').className = "bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between";
+        document.getElementById('comp-bard').className = "bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border border-indigo-500/20 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between";
+        
+        document.getElementById(`comp-${id}`).className = "bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl p-3 border-2 border-indigo-500 hover:border-indigo-500 cursor-pointer transition-all duration-200 flex flex-col justify-between ring-2 ring-indigo-500/30";
+      }
 
-          const response = await fetch(url);
+      function setDifficulty(level) {
+        dungeonDifficulty = level;
+        const btns = document.querySelectorAll('.difficulty-btn');
+        btns.forEach(btn => {
+          btn.className = "difficulty-btn py-1 px-2 rounded border border-slate-700 text-slate-400 hover:text-indigo-400 hover:border-indigo-400 font-bold text-[10px] uppercase tracking-wider transition-all";
+        });
+        const selectedBtn = document.getElementById(`diff-${level}`);
+        if (level === 'easy') {
+          selectedBtn.className = "difficulty-btn py-1 px-2 rounded border border-emerald-500 text-emerald-400 bg-emerald-500/10 font-bold text-[10px] uppercase tracking-wider transition-all";
+        } else if (level === 'medium') {
+          selectedBtn.className = "difficulty-btn py-1 px-2 rounded border border-amber-500 text-amber-400 bg-amber-500/10 font-bold text-[10px] uppercase tracking-wider transition-all";
+        } else {
+          selectedBtn.className = "difficulty-btn py-1 px-2 rounded border border-red-500 text-red-400 bg-red-500/10 font-bold text-[10px] uppercase tracking-wider transition-all";
+        }
+      }
+
+      function showRulesModal() {
+        document.getElementById('rules-modal').classList.remove('hidden');
+      }
+
+      function hideRulesModal() {
+        document.getElementById('rules-modal').classList.add('hidden');
+      }
+
+      function showItemDetail(type) {
+        if (typeof sounds !== 'undefined' && sounds.purchase) {
+          sounds.purchase();
+        }
+        const modal = document.getElementById('item-detail-modal');
+        const iconContainer = document.getElementById('item-detail-icon-container');
+        const typeBadge = document.getElementById('item-detail-type');
+        const nameEl = document.getElementById('item-detail-name');
+        const descEl = document.getElementById('item-detail-desc');
+        
+        if (!modal || !iconContainer || !typeBadge || !nameEl || !descEl) return;
+        
+        if (type === 'weapon') {
+          typeBadge.textContent = "Equipped Weapon";
+          typeBadge.className = "text-[8px] text-amber-400 font-extrabold uppercase tracking-widest bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20";
+          nameEl.textContent = player.weapon.name;
+          
+          let details = `Attack Power Boost: +${player.weapon.damage || 10} Combat Dmg.\n`;
+          if (player.weapon.bonusExp) details += `✨ Scholar's Grace: +${Math.round(player.weapon.bonusExp * 100)}% EXP multiplier.\n`;
+          if (player.weapon.bonusGold) details += `💰 Thief's Fortune: +${Math.round(player.weapon.bonusGold * 100)}% gold gains.`;
+          descEl.textContent = details;
+          
+          iconContainer.className = "w-12 h-12 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-center justify-center text-2xl text-amber-500 mx-auto mb-3";
+          iconContainer.innerHTML = '<i class="fa-solid fa-sword"></i>';
+        } else if (type === 'armor') {
+          typeBadge.textContent = "Equipped Armor";
+          typeBadge.className = "text-[8px] text-cyan-400 font-extrabold uppercase tracking-widest bg-cyan-500/10 px-2.5 py-0.5 rounded border border-cyan-500/20";
+          nameEl.textContent = player.armor.name;
+          
+          let details = `Passive Damage Mitigation: Reduces direct hits by ${player.armor.reduceDamage} HP.\n`;
+          details += `Shield Capacity: Boosts armor energy blocks capacity by +${player.armor.blockBonus || 0}.`;
+          descEl.textContent = details;
+          
+          iconContainer.className = "w-12 h-12 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-center justify-center text-2xl text-cyan-400 mx-auto mb-3";
+          iconContainer.innerHTML = '<i class="fa-solid fa-shirt"></i>';
+        }
+        
+        modal.classList.remove('hidden');
+      }
+
+      function hideItemDetailModal() {
+        document.getElementById('item-detail-modal').classList.add('hidden');
+      }
+
+      function startGame() {
+        if (selectedHeroClass === 'warrior') {
+          player = {
+            level: 1, exp: 0,
+            hp: 120, maxHp: 120,
+            mana: 20, maxMana: 20,
+            defense: 5, maxDefense: 5,
+            gold: 15, score: 0, roomCount: 0,
+            weapon: { name: 'Rusty Shortsword', damage: 10, bonusExp: 0, bonusGold: 0 },
+            armor: { name: 'Iron Breastplate', reduceDamage: 4, blockBonus: 1 },
+            items: { hp_potion: 1, mp_potion: 1, phoenix_feather: 0 },
+            passiveClassBonus: 'warrior',
+            party: []
+          };
+        } else if (selectedHeroClass === 'mage') {
+          player = {
+            level: 1, exp: 0,
+            hp: 80, maxHp: 80,
+            mana: 60, maxMana: 60,
+            defense: 1, maxDefense: 1,
+            gold: 20, score: 0, roomCount: 0,
+            weapon: { name: 'Apprentice Wand', damage: 12, bonusExp: 0.1, bonusGold: 0 },
+            armor: { name: 'Woven Robes', reduceDamage: 1, blockBonus: 0 },
+            items: { hp_potion: 1, mp_potion: 2, phoenix_feather: 0 },
+            passiveClassBonus: 'mage',
+            party: []
+          };
+        } else {
+          player = {
+            level: 1, exp: 0,
+            hp: 95, maxHp: 95,
+            mana: 35, maxMana: 35,
+            defense: 2, maxDefense: 2,
+            gold: 30, score: 0, roomCount: 0,
+            weapon: { name: 'Rusty Dagger', damage: 8, bonusExp: 0, bonusGold: 0.5 },
+            armor: { name: 'Leather Jerkin', reduceDamage: 2, blockBonus: 1 },
+            items: { hp_potion: 2, mp_potion: 1, phoenix_feather: 0 },
+            passiveClassBonus: 'rogue',
+            party: []
+          };
+        }
+
+        const comp = COMPANIONS_DATABASE[selectedStartCompanion];
+        player.party.push(comp);
+
+        chosenCategory = document.getElementById('category').value;
+        chosenType = document.getElementById('type').value;
+
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+
+        renderSpellbook();
+
+        player.roomCount = 0;
+        gameActive = true;
+        
+        bgmController.play('exploration');
+        logToBattleScroll(`🏰 Entering the dungeon as a ${selectedHeroClass.toUpperCase()}... Aria the Cleric joins you!`);
+        advanceToNextQuest();
+      }
+
+      function renderSpellbook() {
+        const cont = document.getElementById('spells-container');
+        cont.innerHTML = '';
+        
+        Object.values(SPELLS_DATABASE).forEach(spell => {
+          const btn = document.createElement('button');
+          btn.onclick = () => castSpell(spell.id);
+          btn.className = "bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-1.5 flex flex-col justify-between transition-all group active:scale-95 text-left h-16 relative overflow-hidden";
+          
+          btn.innerHTML = `
+            <div class="flex items-center gap-1.5 min-w-0">
+              <div class="w-5 h-5 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] flex-shrink-0">
+                <i class="fa-solid ${spell.icon}"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[10px] text-slate-200 font-extrabold leading-tight truncate">${spell.name}</p>
+                <p class="text-[8px] text-slate-500 leading-none truncate">${spell.desc}</p>
+              </div>
+            </div>
+            <div class="flex justify-between items-center w-full mt-1 border-t border-slate-900 pt-1">
+              <span class="text-[8px] text-cyan-400 font-extrabold flex items-center gap-0.5"><i class="fa-solid fa-droplet text-[7px]"></i> ${spell.cost} MP</span>
+              <span class="text-[7px] uppercase font-bold text-slate-600 group-hover:text-cyan-400 transition-colors leading-none">Cast</span>
+            </div>
+          `;
+          cont.appendChild(btn);
+        });
+      }
+
+      async function advanceToNextQuest() {
+        clearInterval(timerInterval);
+        isTimerFrozen = false;
+        isQuestionAnswered = false;
+
+        if (!activeBossFight) {
+          player.roomCount++;
+        }
+        
+        document.getElementById('hud-room').textContent = player.roomCount;
+        document.getElementById('hud-difficulty-tag').textContent = dungeonDifficulty.toUpperCase();
+        
+        if (player.roomCount > 1 && player.roomCount % 5 === 0 && !activeBossFight) {
+          openMerchantCaravan();
+          return;
+        }
+
+        if (player.passiveClassBonus === 'mage' && player.roomCount > 1 && !activeBossFight) {
+          player.mana = Math.min(player.maxMana, player.mana + 4);
+          logToBattleScroll("✨ Arcane Focus restores +4 MP.");
+        }
+
+        player.party.forEach(buddy => {
+          if (buddy.id === 'clerical') {
+            player.hp = Math.min(player.maxHp, player.hp + 3);
+            logToBattleScroll(`👼 [Party] Aria the Cleric heals you for +3 HP.`);
+          }
+          if (buddy.id === 'bard') {
+            player.exp = Math.min(100, player.exp + 4);
+            logToBattleScroll(`🎵 [Party] Lyra the Bard inspires you with melodies: +4 XP gained.`);
+          }
+        });
+
+        updateHeroDashboard();
+
+        document.getElementById('post-question-panel').classList.add('hidden');
+        document.getElementById('trivia-question').textContent = activeBossFight ? "Formulating next boss riddle phase..." : "Investigating dungeon hallway... Preparing next riddle match.";
+        document.getElementById('answer-options').innerHTML = `
+          <div class="col-span-1 md:col-span-2 text-center py-4 text-slate-400">
+            <i class="fa-solid fa-compass-drafting animate-spin text-lg mb-1 text-indigo-500"></i>
+            <p class="text-[9px] uppercase tracking-widest font-bold">Summoning...</p>
+          </div>
+        `;
+
+        const isBossFloor = (player.roomCount % 5 === 4);
+        
+        if (isBossFloor && !activeBossFight) {
+          activeBossFight = true;
+          bossMaxHP = 30 + (player.level * 10);
+          bossCurrentHP = bossMaxHP;
+          bgmController.play('boss');
+          sounds.bossEncounter();
+          
+          document.getElementById('monster-card').className = "bg-gradient-to-b from-slate-950 to-red-950/40 border border-red-500/50 rounded-2xl p-4 shadow-xl relative overflow-hidden transition-all duration-300 glow-red";
+          document.getElementById('combat-accent-bar').className = "absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-red-600 via-purple-600 to-rose-600";
+          document.getElementById('monster-vitals-label').textContent = "👑 BOSS HP";
+          
+          logToBattleScroll("👿 An ominous shadow descends from the dark rafters! A Dungeon Boss confronts you!");
+        } else if (!isBossFloor && !activeBossFight) {
+          bgmController.play('exploration');
+          document.getElementById('monster-card').className = "bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden transition-all duration-300";
+          document.getElementById('combat-accent-bar').className = "absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-indigo-500";
+          document.getElementById('monster-vitals-label').textContent = "MONSTER HP";
+        }
+
+        try {
+          let fetchUrl = `https://opentdb.com/api.php?amount=1&difficulty=${dungeonDifficulty}`;
+          if (chosenCategory) fetchUrl += `&category=${chosenCategory}`;
+          if (chosenType) fetchUrl += `&type=${chosenType}`;
+
+          const response = await fetch(fetchUrl);
           const data = await response.json();
 
-          if (data.results.length > 0) {
-            questionData = data.results[0];
-            const question = questionData.question;
-            correctAnswer = questionData.correct_answer;
-            const incorrectAnswers = questionData.incorrect_answers;
-            const allAnswers = [correctAnswer, ...incorrectAnswers].sort(() => Math.random() - 0.5);
-
-            document.getElementById('question').innerHTML = question;
-            document.getElementById('answer').innerHTML = '';
-            document.getElementById('feedback').innerHTML = '';
-            document.getElementById('next-question-container').classList.add('d-none');
-
-            allAnswers.forEach((answer, index) => {
-              const answerElement = document.createElement('div');
-              answerElement.className = 'list-group-item list-group-item-action text-start border rounded answer-option my-1';
-              answerElement.innerHTML = `${String.fromCharCode(65 + index)}. ${answer}`;
-              answerElement.onclick = () => checkAnswer(answer);
-              document.getElementById('answer').appendChild(answerElement);
-            });
-
-            startTimer();
+          if (data.results && data.results.length > 0) {
+            currentQuestion = data.results[0];
+            setupMonsterEncounter(currentQuestion);
+          } else {
+            fallbackLocalQuestion();
           }
-        } catch (error) {
-          console.error('Error fetching trivia:', error);
-        } finally {
-          document.getElementById('next-question').disabled = false;
+        } catch (err) {
+          fallbackLocalQuestion();
         }
       }
 
-      function startTimer() {
-        timeLeft = 60;
-        updateTimerDisplay();
-        timer = setInterval(() => {
-          timeLeft--;
-          updateTimerDisplay();
-          if (timeLeft <= 0) {
-            clearInterval(timer);
-            timeUp();
+      function fallbackLocalQuestion() {
+        const fallbacks = [
+          {
+            category: "General Knowledge",
+            type: "multiple",
+            difficulty: "easy",
+            question: "Which mystical mythical bird rises anew from its own glowing ashes?",
+            correct_answer: "Phoenix",
+            incorrect_answers: ["Griffin", "Basilisk", "Pegasus"]
+          },
+          {
+            category: "Science & Nature",
+            type: "multiple",
+            difficulty: "easy",
+            question: "What is the primary organic component of standard paper sheets?",
+            correct_answer: "Cellulose",
+            incorrect_answers: ["Gelatin", "Plastic", "Kevlar"]
+          },
+          {
+            category: "History",
+            type: "multiple",
+            difficulty: "medium",
+            question: "In which year did the Titanic hit an iceberg during transit?",
+            correct_answer: "1912",
+            incorrect_answers: ["1905", "1923", "1898"]
+          }
+        ];
+        const rng = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        currentQuestion = rng;
+        setupMonsterEncounter(rng);
+      }
+
+      function setupMonsterEncounter(qData) {
+        let mType = "Dungeon Demon";
+        let art = monsterGraphics.general;
+        
+        if (!activeBossFight) {
+          const cat = qData.category.toLowerCase();
+          if (cat.includes("science") || cat.includes("nature") || cat.includes("math")) {
+            mType = "Alchemical Slime";
+            art = monsterGraphics.science;
+          } else if (cat.includes("history") || cat.includes("geography") || cat.includes("mythology")) {
+            mType = "Chronos Golem";
+            art = monsterGraphics.history;
+          } else if (cat.includes("entertainment") || cat.includes("music") || cat.includes("film") || cat.includes("art")) {
+            mType = "Bard Spectre";
+            art = monsterGraphics.entertainment;
+          }
+          document.getElementById('monster-type').textContent = mType;
+          document.getElementById('monster-name').textContent = `Minion: ${qData.category}`;
+          document.getElementById('monster-art-container').innerHTML = art;
+          
+          const mHpBar = document.getElementById('monster-hp-bar');
+          const mHpText = document.getElementById('monster-hp');
+          mHpBar.style.width = '100%';
+          mHpText.textContent = "10 HP";
+          mHpBar.className = "bg-gradient-to-r from-rose-600 to-red-500 h-full w-full";
+        } else {
+          document.getElementById('monster-type').textContent = "👿 DEMON LORD";
+          document.getElementById('monster-name').textContent = "Lich Emperor of Riddles";
+          document.getElementById('monster-art-container').innerHTML = monsterGraphics.boss;
+          
+          const mHpBar = document.getElementById('monster-hp-bar');
+          const mHpText = document.getElementById('monster-hp');
+          const hpPct = (bossCurrentHP / bossMaxHP) * 100;
+          mHpBar.style.width = `${hpPct}%`;
+          mHpText.textContent = `${bossCurrentHP}/${bossMaxHP} HP`;
+          mHpBar.className = "bg-gradient-to-r from-purple-600 via-red-500 to-amber-500 h-full w-full";
+        }
+
+        const decodedQuestion = decodeHTMLEntities(qData.question);
+        document.getElementById('trivia-question').innerHTML = decodedQuestion;
+
+        currentCorrectAnswer = decodeHTMLEntities(qData.correct_answer);
+        const incorrects = qData.incorrect_answers.map(ans => decodeHTMLEntities(ans));
+        currentAllAnswers = [currentCorrectAnswer, ...incorrects].sort(() => Math.random() - 0.5);
+
+        const optContainer = document.getElementById('answer-options');
+        optContainer.innerHTML = '';
+
+        currentAllAnswers.forEach((answer, idx) => {
+          const btn = document.createElement('button');
+          btn.onclick = () => selectAnswer(answer, btn);
+          btn.className = "answer-btn w-full bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/40 text-left p-2 rounded-xl flex items-center justify-between group transition-all duration-200";
+          
+          btn.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 bg-slate-950 rounded flex items-center justify-center text-[10px] font-bold text-slate-400 group-hover:text-indigo-400 border border-slate-800">${String.fromCharCode(65 + idx)}</span>
+              <span class="text-xs text-slate-300 font-semibold leading-snug">${answer}</span>
+            </div>
+            <i class="fa-solid fa-angle-right text-slate-600 text-xs group-hover:text-indigo-400 transition-colors"></i>
+          `;
+          optContainer.appendChild(btn);
+        });
+
+        startQuestTimer();
+      }
+
+      function startQuestTimer() {
+        clearInterval(timerInterval);
+        timerSecondsRemaining = (dungeonDifficulty === 'easy') ? 35 : (dungeonDifficulty === 'medium') ? 25 : 15;
+        if (activeBossFight) {
+          timerSecondsRemaining += 5;
+        }
+        updateTimerUI();
+
+        timerInterval = setInterval(() => {
+          if (!isTimerFrozen) {
+            timerSecondsRemaining--;
+            updateTimerUI();
+
+            if (timerSecondsRemaining <= 0) {
+              clearInterval(timerInterval);
+              timeExpiredStrike();
+            }
           }
         }, 1000);
       }
 
-      function updateTimerDisplay() {
-        document.getElementById('time-left').textContent = timeLeft;
-      }
+      function updateTimerUI() {
+        const tBar = document.getElementById('hud-timer-bar');
+        const tText = document.getElementById('hud-timer-text');
+        
+        const maxSeconds = (dungeonDifficulty === 'easy') ? (activeBossFight ? 40 : 35) : (activeBossFight ? 30 : 25) ;
+        const pct = (timerSecondsRemaining / maxSeconds) * 100;
+        
+        tBar.style.width = `${pct}%`;
+        tText.textContent = `${timerSecondsRemaining}s`;
 
-      function timeUp() {
-        answerClicked = true;
-        health -= 5;
-        updateScoreAndHealth();
-        const feedbackElement = document.getElementById('feedback');
-        feedbackElement.innerHTML = `Time's up! The correct answer was: <strong>${correctAnswer}</strong>. You lost 5 health points.`;
-        feedbackElement.classList.remove('text-success');
-        feedbackElement.classList.add('text-danger');
-        document.getElementById('next-question-container').classList.remove('d-none');
-        highlightCorrectAnswer();
-        if (health <= 0) {
-          endGame();
+        if (timerSecondsRemaining < 8) {
+          tBar.className = "bg-red-500 h-full w-full animate-pulse";
+        } else {
+          tBar.className = "bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 h-full w-full";
         }
       }
 
-      function highlightCorrectAnswer() {
-        const answerElements = document.querySelectorAll('.answer-option');
-        answerElements.forEach(element => {
-          if (element.textContent.slice(3) === correctAnswer) {
-            element.classList.add('list-group-item-success');
+      function causeScreenShake() {
+        const el = document.getElementById('main-frame');
+        el.classList.add('shake-anim');
+        setTimeout(() => {
+          el.classList.remove('shake-anim');
+        }, 300);
+      }
+
+      function timeExpiredStrike() {
+        if (isQuestionAnswered) return;
+        isQuestionAnswered = true;
+
+        sounds.wrong();
+        causeScreenShake();
+        
+        logToBattleScroll("⌛ Time expired! Ambushed during your hesitation!");
+
+        let dmg = activeBossFight ? 25 : 15;
+        if (player.passiveClassBonus === 'warrior') dmg = Math.max(5, dmg - player.armor.reduceDamage);
+        
+        player.hp -= dmg;
+        logToBattleScroll(`💥 Sustained ${dmg} direct damage.`);
+
+        revealCorrectAnswer();
+        concludeRoundCombat(false);
+      }
+
+      function selectAnswer(selectedText, btnElement) {
+        if (isQuestionAnswered) return;
+        isQuestionAnswered = true;
+        clearInterval(timerInterval);
+
+        const allBtns = document.querySelectorAll('.answer-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+
+        if (selectedText === currentCorrectAnswer) {
+          sounds.correct();
+          
+          let damageDealt = player.weapon.damage || 10;
+          
+          if (player.passiveClassBonus === 'mage') {
+            damageDealt += 4;
+          } else if (player.passiveClassBonus === 'warrior') {
+            damageDealt += 2;
+          }
+
+          player.party.forEach(buddy => {
+            if (buddy.id === 'pyro') {
+              damageDealt += 4;
+              logToBattleScroll(`🔥 Ignis the Pyromancer fuels your strikes: +4 Fire DMG!`);
+            }
+          });
+
+          let baseGold = Math.floor(Math.random() * 6) + 5;
+          let baseExp = activeBossFight ? 45 : 15;
+
+          if (player.passiveClassBonus === 'rogue') {
+            baseGold = Math.floor(baseGold * 1.5);
+            damageDealt += (Math.random() < 0.35 ? 6 : 0);
+          }
+
+          if (player.weapon.bonusGold > 0) baseGold = Math.floor(baseGold * (1 + player.weapon.bonusGold));
+          if (player.weapon.bonusExp > 0) baseExp = Math.floor(baseExp * (1 + player.weapon.bonusExp));
+
+          player.gold += baseGold;
+          player.exp += baseExp;
+          player.score += activeBossFight ? 300 : 100;
+
+          btnElement.classList.add('border-emerald-500', 'bg-emerald-950/30');
+          btnElement.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 bg-emerald-500 text-slate-950 rounded flex items-center justify-center text-xs font-extrabold"><i class="fa-solid fa-check"></i></span>
+              <span class="text-xs text-emerald-400 font-bold">${selectedText}</span>
+            </div>
+            <span class="text-[10px] text-emerald-400 font-extrabold">+${baseGold}G | +${baseExp}XP</span>
+          `;
+
+          if (activeBossFight) {
+            bossCurrentHP -= damageDealt;
+            if (bossCurrentHP < 0) bossCurrentHP = 0;
+            
+            const mHpBar = document.getElementById('monster-hp-bar');
+            mHpBar.style.width = `${(bossCurrentHP / bossMaxHP) * 100}%`;
+            document.getElementById('monster-hp').textContent = `${bossCurrentHP}/${bossMaxHP} HP`;
+
+            logToBattleScroll(`⚔️ Striking Boss for ${damageDealt} damage with your ${player.weapon.name}.`);
+            
+            if (bossCurrentHP <= 0) {
+              logToBattleScroll("🎉 VICTORY! Slain the Lich Emperor of Riddles!");
+              activeBossFight = false;
+              concludeRoundCombat(true, true);
+            } else {
+              concludeRoundCombat(true, false);
+            }
+          } else {
+            logToBattleScroll(`⚔️ Slashed the minion for ${damageDealt} damage with ${player.weapon.name}.`);
+            document.getElementById('monster-hp-bar').style.width = '0%';
+            document.getElementById('monster-hp').textContent = "0 HP";
+            concludeRoundCombat(true, true);
+          }
+
+        } else {
+          sounds.wrong();
+          causeScreenShake();
+          btnElement.classList.add('border-rose-500', 'bg-rose-950/30');
+          
+          let dmg = (dungeonDifficulty === 'easy') ? 12 : (dungeonDifficulty === 'medium') ? 18 : 24;
+          if (activeBossFight) {
+            dmg = Math.floor(dmg * 1.4);
+          }
+          
+          if (player.passiveClassBonus === 'rogue' && Math.random() < 0.25) {
+            logToBattleScroll("💨 Leaped away from the attack!");
+          } else {
+            if (player.defense > 0) {
+              player.defense--;
+              logToBattleScroll("🛡️ Defense Ward block triggered! Recharging shields...");
+            } else {
+              let netDmg = dmg;
+              if (player.passiveClassBonus === 'warrior') {
+                netDmg = Math.max(2, dmg - player.armor.reduceDamage);
+              }
+              player.hp -= netDmg;
+              logToBattleScroll(`💥 Hit sustained: took ${netDmg} damage.`);
+            }
+          }
+
+          revealCorrectAnswer();
+          concludeRoundCombat(false, false);
+        }
+      }
+
+      function revealCorrectAnswer() {
+        const allBtns = document.querySelectorAll('.answer-btn');
+        allBtns.forEach(btn => {
+          const textSpan = btn.querySelector('div span:nth-child(2)');
+          if (textSpan && textSpan.textContent === currentCorrectAnswer) {
+            btn.classList.add('border-emerald-500/50', 'bg-emerald-950/10');
+            const statusBox = btn.querySelector('div span');
+            if (statusBox) {
+              statusBox.className = "w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-[10px] font-bold border border-emerald-500/30";
+            }
           }
         });
       }
 
-      function checkAnswer(selectedAnswer) {
-        if (answerClicked) return;
-        answerClicked = true;
-        clearInterval(timer);
-
-        const feedbackElement = document.getElementById('feedback');
-        if (selectedAnswer === correctAnswer) {
-          feedbackElement.innerHTML = `Your answer "${selectedAnswer}" is correct! &#128077;`;
-          feedbackElement.classList.remove('text-danger');
-          feedbackElement.classList.add('text-success');
-          score++;
+      function concludeRoundCombat(success, targetDefeated = false) {
+        document.getElementById('post-question-panel').classList.remove('hidden');
+        const feedback = document.getElementById('combat-feedback');
+        const nextBtn = document.getElementById('btn-next-room');
+        
+        if (activeBossFight) {
+          nextBtn.innerHTML = `Next Phase <i class="fa-solid fa-fire ml-0.5"></i>`;
+          nextBtn.className = "px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 font-bold uppercase text-[10px] tracking-wider border border-purple-400/20 shadow-lg active:scale-95 transition-all w-full sm:w-auto text-center flex justify-center items-center gap-1";
         } else {
-          feedbackElement.innerHTML = `You're incorrect! The correct answer was: <strong>${correctAnswer}</strong> &#128078;`;
-          feedbackElement.classList.remove('text-success');
-          feedbackElement.classList.add('text-danger');
-          health -= 5;
-          if (health <= 0) {
-            endGame();
+          nextBtn.innerHTML = `Advance <i class="fa-solid fa-arrow-right ml-0.5"></i>`;
+          nextBtn.className = "px-6 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 font-bold uppercase text-[10px] tracking-wider border border-indigo-400/20 shadow-lg active:scale-95 transition-all w-full sm:w-auto text-center flex justify-center items-center gap-1";
+        }
+
+        if (success) {
+          if (activeBossFight) {
+            feedback.innerHTML = `<span class="text-amber-400 text-xs flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Weakened Boss!</span>`;
+          } else {
+            feedback.innerHTML = `<span class="text-emerald-400 text-xs flex items-center gap-1"><i class="fa-solid fa-face-laugh-beam"></i> Room cleared.</span>`;
+          }
+        } else {
+          feedback.innerHTML = `<span class="text-rose-400 text-xs flex items-center gap-1"><i class="fa-solid fa-face-frown-open"></i> Hit taken. Keep moving!</span>`;
+        }
+
+        if (player.hp <= 0) {
+          if (player.items.phoenix_feather > 0) {
+            player.items.phoenix_feather--;
+            player.hp = Math.floor(player.maxHp * 0.35);
+            logToBattleScroll("🔥 Phoenix Feather consumed! Resurrected!");
+            updateHeroDashboard();
+          } else {
+            triggerGameOver();
             return;
           }
         }
 
-        highlightCorrectAnswer();
-        updateScoreAndHealth();
-        document.getElementById('next-question-container').classList.remove('d-none');
-      }
-
-      function updateScoreAndHealth() {
-        document.getElementById('score-value').textContent = score;
-        document.getElementById('health').textContent = health;
-      }
-
-      function endGame() {
-        clearInterval(timer);
-        document.getElementById('feedback').innerHTML = `Game Over! Your final score is <strong>${score}</strong> on ${difficulty} difficulty. &#128577;`;
-        document.getElementById('question').innerHTML = '';
-        document.getElementById('answer').innerHTML = '';
-        document.getElementById('next-question-container').classList.add('d-none');
-        document.getElementById('back-to-menu-container').classList.remove('d-none');
-        document.getElementById('timer').classList.add('d-none');
-        document.getElementById('share-score-container').classList.remove('d-none');
-      }
-
-      function goBackToMenu() {
-        document.getElementById('menu').style.display = 'block';
-        document.getElementById('welcome-message').style.display = 'block';
-        document.getElementById('back-to-menu-container').classList.add('d-none');
-        document.getElementById('health-bar').classList.add('d-none');
-        document.getElementById('difficulty').classList.add('d-none');
-        document.getElementById('score').classList.add('d-none');
-        document.getElementById('timer').classList.add('d-none');
-        document.getElementById('question').innerHTML = '';
-        document.getElementById('answer').innerHTML = '';
-        document.getElementById('feedback').innerHTML = '';
-        document.getElementById('difficulty-buttons').style.display = 'block';
-        document.getElementById('share-score-container').classList.add('d-none');
-        score = 0;
-        health = 100;
-        difficulty = 'easy';
-        category = '';
-        type = '';
-        document.getElementById('category').value = '';
-        document.getElementById('type').value = '';
-        document.getElementById('type-select').classList.add('d-none');
-      }
-
-      function shareScore() {
-        const shareText = `I scored ${score} points on ${difficulty} difficulty in the Trivia Challenge!`;
-        const shareUrl = window.location.href;
-
-        if (navigator.share) {
-          navigator.share({
-            title: 'Trivia Challenge Score',
-            text: shareText,
-            url: shareUrl,
-          }).then(() => {
-            console.log('Thanks for sharing!');
-          }).catch(console.error);
+        if (player.exp >= 100) {
+          triggerLevelUp();
         } else {
-          // Fallback for browsers that don't support the Web Share API
-          const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
-          window.open(shareUrl, '_blank');
+          updateHeroDashboard();
         }
       }
 
-      document.getElementById('next-question').onclick = fetchTrivia;
-      document.getElementById('back-to-menu').onclick = goBackToMenu;
-      document.getElementById('share-score').onclick = shareScore;
+      function triggerLevelUp() {
+        sounds.levelUp();
+        player.level++;
+        player.exp -= 100;
+        
+        player.maxHp += 15;
+        player.maxMana += 10;
+        player.hp = player.maxHp;
+        player.mana = player.maxMana;
+        
+        logToBattleScroll(`✨ LEVEL UP! Reached level ${player.level}! Vitals restored.`);
+        displayDestinyCards();
+      }
+
+      function displayDestinyCards() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('upgrade-screen').classList.remove('hidden');
+
+        const cardData = [
+          { title: "Fortitude Spark", desc: "+20 Max HP permanently", action: () => { player.maxHp += 20; player.hp = player.maxHp; } },
+          { title: "Intellect Catalyst", desc: "+15 Max Mana permanently", action: () => { player.maxMana += 15; player.mana = player.maxMana; } },
+          { title: "Golden Greed", desc: "+30 Dungeon Gold bonus", action: () => { player.gold += 30; } },
+          { title: "Guardian Aegis", desc: "Gain 5 immediate Armor Blocks", action: () => { player.defense = Math.min(player.maxDefense + 2, player.defense + 5); } }
+        ];
+
+        const chosen = cardData.sort(() => Math.random() - 0.5).slice(0, 3);
+        const container = document.getElementById('upgrade-cards-container');
+        container.innerHTML = '';
+
+        chosen.forEach(card => {
+          const div = document.createElement('div');
+          div.className = "bg-slate-900 border border-slate-800 hover:border-amber-400 rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:-translate-y-1 transition-all glow-gold duration-200";
+          div.onclick = () => {
+            card.action();
+            logToBattleScroll(`🃏 Selected card: ${card.title}`);
+            document.getElementById('upgrade-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            updateHeroDashboard();
+            advanceToNextQuest();
+          };
+
+          div.innerHTML = `
+            <div>
+              <div class="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-sm mx-auto mb-2">
+                ✨
+              </div>
+              <h4 class="rpg-font-title text-sm font-bold text-slate-100">${card.title}</h4>
+              <p class="text-[10px] text-slate-400 mt-1 leading-snug">${card.desc}</p>
+            </div>
+            <button class="mt-4 w-full py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10px] uppercase rounded-lg transition-all">Select</button>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function castSpell(spellId) {
+        if (isQuestionAnswered && spellId !== 'heal') {
+          logToBattleScroll("⚠️ Spells can only be cast while solving battles.");
+          return;
+        }
+
+        const spell = SPELLS_DATABASE[spellId];
+        if (player.mana < spell.cost) {
+          logToBattleScroll("⚠️ Out of Mana!");
+          return;
+        }
+
+        player.mana -= spell.cost;
+        sounds.spell();
+
+        if (spellId === 'heal') {
+          player.hp = Math.min(player.maxHp, player.hp + 35);
+          logToBattleScroll("💚 Cast Mend Wounds: recovered +35 HP.");
+        } else if (spellId === 'freeze') {
+          if (isTimerFrozen) {
+            logToBattleScroll("⚠️ Chrono flows are already frozen.");
+            player.mana += spell.cost;
+            return;
+          }
+          isTimerFrozen = true;
+          logToBattleScroll("❄️ Cast Freeze Time! Timer is paused.");
+        } else if (spellId === 'mana_shield') {
+          player.defense = Math.min(player.maxDefense, player.defense + 3);
+          logToBattleScroll("🛡️ Cast Shield Ward: gained +3 blocks.");
+        } else if (spellId === 'clairvoyance') {
+          const allBtns = document.querySelectorAll('.answer-btn');
+          let eliminated = 0;
+          allBtns.forEach(btn => {
+            const textSpan = btn.querySelector('div span:nth-child(2)');
+            if (textSpan && textSpan.textContent !== currentCorrectAnswer && eliminated < 2 && !btn.disabled) {
+              btn.disabled = true;
+              btn.className = "answer-btn w-full bg-slate-950 border border-slate-900 opacity-25 text-left p-2 rounded-xl flex items-center justify-between cursor-not-allowed";
+              eliminated++;
+            }
+          });
+          logToBattleScroll("👁️ Cast Clairvoyance! Eliminated two incorrect pathways.");
+        }
+
+        updateHeroDashboard();
+      }
+
+      function useConsumable(itemId) {
+        if (player.items[itemId] <= 0) {
+          logToBattleScroll("⚠️ No potions of this type remaining.");
+          return;
+        }
+
+        player.items[itemId]--;
+        
+        if (itemId === 'hp_potion') {
+          player.hp = Math.min(player.maxHp, player.hp + 40);
+          logToBattleScroll("🩹 Restored 40 HP.");
+        } else if (itemId === 'mp_potion') {
+          player.mana = Math.min(player.maxMana, player.mana + 35);
+          logToBattleScroll("🌀 Refilled 35 MP.");
+        }
+
+        updateHeroDashboard();
+      }
+
+      function openMerchantCaravan() {
+        bgmController.play('shop');
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('merchant-screen').classList.remove('hidden');
+
+        document.getElementById('shop-wallet-gold').textContent = `${player.gold} G`;
+
+        const shopContainer = document.getElementById('shop-inventory-container');
+        shopContainer.innerHTML = '';
+
+        MERCHANT_STOCK.forEach(item => {
+          if (item.class && item.class !== selectedHeroClass) return;
+
+          const itemCard = document.createElement('div');
+          itemCard.className = "bg-slate-950 border border-slate-800 hover:border-amber-400/40 rounded-xl p-3 flex justify-between items-center transition-all group";
+          
+          itemCard.innerHTML = `
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-sm">
+                <i class="fa-solid ${item.icon}"></i>
+              </div>
+              <div class="text-left">
+                <h4 class="text-xs font-extrabold text-slate-100 group-hover:text-amber-400 transition-colors">${item.name}</h4>
+                <p class="text-[9px] text-slate-500 leading-tight">${item.desc}</p>
+              </div>
+            </div>
+            <button onclick="buyMerchantItem('${item.id}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-[9px] uppercase rounded-md active:scale-95 transition-all">
+              Buy: ${item.price}G
+            </button>
+          `;
+          shopContainer.appendChild(itemCard);
+        });
+
+        Object.values(COMPANIONS_DATABASE).forEach(companion => {
+          const alreadyHired = player.party.some(p => p.id === companion.id);
+          if (alreadyHired) return;
+
+          const hireCard = document.createElement('div');
+          hireCard.className = "bg-slate-950 border border-slate-800 hover:border-indigo-400/40 rounded-xl p-3 flex justify-between items-center transition-all group";
+          hireCard.innerHTML = `
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-lg">
+                ${companion.icon}
+              </div>
+              <div class="text-left">
+                <h4 class="text-xs font-extrabold text-slate-100 group-hover:text-indigo-400 transition-colors">${companion.name}</h4>
+                <p class="text-[9px] text-slate-500 leading-tight">${companion.passive}</p>
+              </div>
+            </div>
+            <button onclick="hireCompanion('${companion.id}')" class="px-2.5 py-1 bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold text-[9px] uppercase rounded-md active:scale-95 transition-all">
+              Hire: 30G
+            </button>
+          `;
+          shopContainer.appendChild(hireCard);
+        });
+      }
+
+      function buyMerchantItem(itemId) {
+        const item = MERCHANT_STOCK.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (player.gold < item.price) {
+          logToBattleScroll("🧙‍♂️ Merchant: 'No gold, no treasure!'");
+          return;
+        }
+
+        player.gold -= item.price;
+        sounds.purchase();
+
+        if (item.type === 'consumable') {
+          player.items[itemId]++;
+          logToBattleScroll(`🛒 Purchased ${item.name}.`);
+        } else if (item.type === 'weapon') {
+          let stats = { name: item.name, damage: 15, bonusExp: 0, bonusGold: 0 };
+          if (itemId === 'broadsword') stats.bonusExp = 0.15;
+          if (itemId === 'staff') stats.bonusExp = 0.05;
+          if (itemId === 'dagger') stats.bonusGold = 0.45;
+
+          player.weapon = stats;
+          logToBattleScroll(`⚔️ Equipped: ${item.name}!`);
+        } else if (item.type === 'armor') {
+          player.armor = { name: item.name, reduceDamage: 8, blockBonus: 2 };
+          player.maxDefense += 2;
+          player.defense = player.maxDefense;
+          logToBattleScroll(`🛡️ Equipped: ${item.name}! Shields reinforced.`);
+        }
+
+        document.getElementById('shop-wallet-gold').textContent = `${player.gold} G`;
+        updateHeroDashboard();
+      }
+
+      function hireCompanion(compId) {
+        const companion = COMPANIONS_DATABASE[compId];
+        if (!companion) return;
+
+        if (player.gold < 30) {
+          logToBattleScroll("🧙‍♂️ Merchant: 'Hire fee is 30G. You cannot afford it.'");
+          return;
+        }
+
+        player.gold -= 30;
+        player.party.push(companion);
+        sounds.purchase();
+
+        logToBattleScroll(`👥 Recruited ${companion.name} to the party!`);
+        document.getElementById('shop-wallet-gold').textContent = `${player.gold} G`;
+        
+        openMerchantCaravan();
+        updateHeroDashboard();
+      }
+
+      function leaveShop() {
+        document.getElementById('merchant-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        advanceToNextQuest();
+      }
+
+      function updateHeroDashboard() {
+        document.getElementById('hero-level').textContent = player.level;
+        document.getElementById('hero-exp').textContent = player.exp;
+        
+        const expPct = player.exp;
+        document.getElementById('hero-exp-bar').style.width = `${expPct}%`;
+
+        document.getElementById('hero-hp-text').textContent = `${player.hp} / ${player.maxHp}`;
+        const hpPct = (player.hp / player.maxHp) * 100;
+        const hpBar = document.getElementById('hero-hp-bar');
+        hpBar.style.width = `${hpPct}%`;
+        if (hpPct < 30) {
+          hpBar.className = "bg-red-600 h-full w-full animate-pulse";
+        } else {
+          hpBar.className = "bg-gradient-to-r from-red-600 to-emerald-500 h-full w-full";
+        }
+
+        document.getElementById('hero-mp-text').textContent = `${player.mana} / ${player.maxMana}`;
+        const mpPct = (player.mana / player.maxMana) * 100;
+        document.getElementById('hero-mp-bar').style.width = `${mpPct}%`;
+
+        document.getElementById('hero-defense-text').textContent = `${player.defense} / ${player.maxDefense}`;
+        const defPct = (player.defense / player.maxDefense) * 100;
+        document.getElementById('hero-defense-bar').style.width = `${defPct}%`;
+
+        document.getElementById('hero-gold').textContent = `${player.gold} G`;
+
+        const avatarCont = document.getElementById('hero-avatar');
+        if (selectedHeroClass === 'warrior') {
+          avatarCont.innerHTML = '<i class="fa-solid fa-shield-halved text-red-400 text-base"></i>';
+          document.getElementById('hero-class-name').textContent = "WARRIOR HERO";
+        } else if (selectedHeroClass === 'mage') {
+          avatarCont.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-cyan-400 text-base"></i>';
+          document.getElementById('hero-class-name').textContent = "ARCH-MAGE";
+        } else {
+          avatarCont.innerHTML = '<i class="fa-solid fa-skull-crossbones text-emerald-400 text-base"></i>';
+          document.getElementById('hero-class-name').textContent = "SHADOW ROGUE";
+        }
+
+        document.getElementById('slot-weapon-name').textContent = player.weapon.name;
+        document.getElementById('slot-armor-name').textContent = player.armor.name;
+
+        document.getElementById('qty-potion-hp').textContent = `x${player.items.hp_potion}`;
+        document.getElementById('qty-potion-mp').textContent = `x${player.items.mp_potion}`;
+        document.getElementById('bag-feather-status').textContent = player.items.phoenix_feather > 0 ? "Charged" : "None";
+
+        const partyListEl = document.getElementById('party-hud-list');
+        partyListEl.innerHTML = '';
+        if (player.party.length === 0) {
+          partyListEl.innerHTML = '<p class="text-[10px] text-slate-500 italic">No companions recruited yet.</p>';
+        } else {
+          player.party.forEach(buddy => {
+            const row = document.createElement('div');
+            row.className = "flex items-center gap-2 bg-slate-950/60 p-1.5 border border-slate-800 rounded-lg";
+            row.innerHTML = `
+              <span class="text-base">${buddy.icon}</span>
+              <div class="text-left min-w-0">
+                <p class="text-[10px] font-bold text-slate-200 leading-none">${buddy.name}</p>
+                <p class="text-[8px] text-indigo-400 leading-none mt-0.5">${buddy.passive}</p>
+              </div>
+            `;
+            partyListEl.appendChild(row);
+          });
+        }
+      }
+
+      function logToBattleScroll(message) {
+        const scroll = document.getElementById('battle-log');
+        const item = document.createElement('p');
+        item.className = "battle-log-item border-l border-indigo-500/40 pl-1.5 py-0.5 leading-snug text-[10px]";
+        item.innerHTML = `<strong>[Room ${player.roomCount}]:</strong> ${message}`;
+        
+        scroll.appendChild(item);
+        scroll.scrollTop = scroll.scrollHeight;
+      }
+
+      function triggerGameOver() {
+        gameActive = false;
+        bgmController.stop();
+        document.getElementById('music-indicator').classList.add('hidden');
+        
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('gameover-screen').classList.remove('hidden');
+
+        document.getElementById('gameover-sub-reason').textContent = `Felled on Room floor ${player.roomCount}`;
+        document.getElementById('go-class').textContent = selectedHeroClass.toUpperCase();
+        document.getElementById('go-level').textContent = player.level;
+        document.getElementById('go-rooms').textContent = player.roomCount - 1;
+        document.getElementById('go-score').textContent = `${player.score} pts`;
+      }
+
+      function goBackToMenu() {
+        document.getElementById('gameover-screen').classList.add('hidden');
+        document.getElementById('setup-screen').classList.remove('hidden');
+        clearInterval(timerInterval);
+        activeBossFight = false;
+      }
+
+      function shareScore() {
+        const message = `I scored ${player.score} points and made it to room ${player.roomCount} as a Level ${player.level} ${selectedHeroClass.toUpperCase()} in Trivia Quest Roguelite!`;
+        if (navigator.share) {
+          navigator.share({
+            title: 'My Trivia Quest Roguelite Highscore',
+            text: message,
+            url: window.location.href
+          }).catch(console.error);
+        } else {
+          const fallbackUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+          window.open(fallbackUrl, '_blank');
+        }
+      }
+
+      document.getElementById('btn-next-room').onclick = advanceToNextQuest;
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   </body>
 </html>
